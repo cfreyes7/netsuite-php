@@ -16,6 +16,7 @@ class NetSuiteClient
     private $nsversion = "2015_1r1";
     private $userequest = true;
     private $config;
+    private $options;
     private $soapHeaders = array();
 
     /**
@@ -29,6 +30,7 @@ class NetSuiteClient
         global $debuginfo;
 
         $this->setConfig($config);
+        $this->setOptions($options);
         $this->classmap = include "includes/classmap.php";
 
         if (!isset($wsdl)) {
@@ -67,13 +69,13 @@ class NetSuiteClient
         }
 
         $options['classmap'] = $this->classmap;
-        $options['trace'] = 1;
-        $options['connection_timeout'] = 5;
-        $options['cache_wsdl'] = WSDL_CACHE_BOTH;
+        $options['trace'] = $this->options['trace'];
+        $options['connection_timeout'] = $this->options['connection_timeout'];
+        $options['cache_wsdl'] = $this->options['cache_wsdl'];
         $httpheaders = "PHP-SOAP/" . phpversion() . " + NetSuite PHP Toolkit " . $this->nsversion;
 
         $options['location'] = $this->config['host'] . "/services/NetSuitePort_" . $this->config['endpoint'];
-        $options['keep_alive'] = false; // do not maintain http connection to the server.
+        $options['keep_alive'] = $this->options['keep_alive']; // do not maintain http connection to the server.
         $options['features'] = SOAP_SINGLE_ELEMENT_ARRAYS;
 
         if (isset($debuginfo)) {
@@ -116,6 +118,23 @@ class NetSuiteClient
         );
 
         $this->config = array_merge($required, $optional);
+    }
+
+    /**
+     * @param array $options
+     */
+    private function setOptions(array $options)
+    {
+        $trace = getenv('NETSUITE_TRACE') ?: 1;
+        $connectionTimeout = getenv('NETSUITE_CONNECTION_TIMEOUT') ?: 5;
+        $cacheWsdl = getenv('NETSUITE_CACHE_WSDL') ?: WSDL_CACHE_BOTH;
+        $keepAlive = getenv('NETSUITE_KEEP_ALIVE') ?: false;
+        $options['trace'] = isset($options['trace']) ? $options['trace'] : $trace;
+        $options['connection_timeout'] = isset($options['connection_timeout']) ? $options['connection_timeout'] : $connectionTimeout;
+        $options['cache_wsdl'] = isset($options['cache_wsdl']) ? $options['cache_wsdl'] : $cacheWsdl;
+        $options['keep_alive'] = isset($options['keep_alive']) ? $options['keep_alive'] : $keepAlive; // do not maintain http connection to the server.
+
+        $this->options = $options;
     }
 
     /**
